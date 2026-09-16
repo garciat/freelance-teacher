@@ -68,6 +68,11 @@ export class Invoice {
   }
 
   @traced("data")
+  static async listAll(owner: string) {
+    return await Array.fromAsync(this.list(owner));
+  }
+
+  @traced("data")
   static async get(owner: string, id: bigint) {
     const record = await core.get(recordKey(owner, id));
     if (record.versionstamp === null) {

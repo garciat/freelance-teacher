@@ -19,7 +19,7 @@ export const RouteInvoiceCreate = {
     PagesInvoice.create.get,
     async ({ user }) => {
       const [students, lastSeqNo] = await Promise.all([
-        Array.fromAsync(Student.list(user.id)),
+        Student.listAll(user.id),
         Invoice.maxSequenceNumber(user.id),
       ]);
 

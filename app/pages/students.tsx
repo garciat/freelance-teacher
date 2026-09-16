@@ -20,9 +20,7 @@ export const routes = [
   route(
     PagesStudent.index,
     async ({ user }) => {
-      const items = await Array.fromAsync(
-        Student.list(user.id),
-      );
+      const items = await Student.listAll(user.id);
 
       const displayItems = items.toSorted((a, b) =>
         a.status.localeCompare(b.status) || a.name.localeCompare(b.name)

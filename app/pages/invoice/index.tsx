@@ -30,7 +30,10 @@ const stateLabels = {
 export const RouteInvoiceIndex = route(
   PagesInvoice.index,
   async ({ user }) => {
-    const invoices = await Array.fromAsync(Invoice.list(user.id));
+    const [invoices, students] = await Promise.all([
+      Invoice.listAll(user.id),
+      Student.listAll(user.id),
+    ]);
 
     const invoicesByMonth = Map.groupBy(
       invoices,
@@ -43,14 +46,8 @@ export const RouteInvoiceIndex = route(
           .toString(),
     );
 
-    const students = new Map(
-      await Array.fromAsync(
-        async function* () {
-          for await (const student of Student.list(user.id)) {
-            yield [student.id, student];
-          }
-        }(),
-      ),
+    const studentsById = new Map(
+      students.map((student) => [student.id, student]),
     );
 
     const formatEventDate = (ts: Temporal.Instant) =>
@@ -94,11 +91,11 @@ export const RouteInvoiceIndex = route(
                     <Link
                       to={PagesStudent.manage.get}
                       path={{
-                        id: students.get(invoice.recipient.studentId)!.id,
+                        id: studentsById.get(invoice.recipient.studentId)!.id,
                       }}
                       className="navigate"
                     >
-                      {students.get(invoice.recipient.studentId)!.name}
+                      {studentsById.get(invoice.recipient.studentId)!.name}
                     </Link>
 
                     {getState(invoice) === "pending" && (
