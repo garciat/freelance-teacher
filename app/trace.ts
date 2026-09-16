@@ -1,22 +1,13 @@
-import { Span, SpanStatusCode, trace } from "npm:@opentelemetry/api@1";
+import { SpanStatusCode, trace } from "npm:@opentelemetry/api@1";
 
 export const AppTracer = trace.getTracer("freelance-teacher");
 
-export function traced<Args extends unknown[], R>(
-  prefix: string,
-  options: {
-    pre?: (span: Span, ...args: Args) => void;
-    post?: (span: Span, ret: R, ...args: Args) => void;
-  } = {},
-) {
-  const pre = options.pre ?? (() => {});
-  const post = options.post ?? (() => {});
-
+export function traced<Args extends unknown[], R>(prefix: string) {
   return <This>(
-    originalMethod: (this: This, ...args: Args) => R,
+    originalMethod: (this: This, ...args: Args) => Promise<R>,
     decoratorContext: ClassMethodDecoratorContext<
       This,
-      (this: This, ...args: Args) => R
+      (this: This, ...args: Args) => Promise<R>
     >,
   ) => {
     if (!decoratorContext.static) {
@@ -28,15 +19,12 @@ export function traced<Args extends unknown[], R>(
 
     const methodName = String(decoratorContext.name);
 
-    return function (this: This & { name: string }, ...args: Args): R {
+    return function (this: This & { name: string }, ...args: Args): Promise<R> {
       const spanName = `${prefix}.${this.name}.${methodName}`;
 
-      return AppTracer.startActiveSpan(spanName, (span) => {
+      return AppTracer.startActiveSpan(spanName, async (span) => {
         try {
-          pre(span, ...args);
-          const ret = originalMethod.apply(this, args);
-          post(span, ret, ...args);
-          return ret;
+          return await originalMethod.apply(this, args);
         } catch (error) {
           if (error instanceof Error) {
             span.recordException(error);

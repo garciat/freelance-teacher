@@ -54,7 +54,6 @@ export type CreateRequest = {
 };
 
 export class Invoice {
-  @traced("data")
   static async *list(owner: string) {
     for await (
       const entry of await core.list(

@@ -52,7 +52,6 @@ export type UpdateRequest = {
 };
 
 export class Student {
-  @traced("data")
   static async *list(
     owner: string,
     options?: { includeInactive: boolean },
