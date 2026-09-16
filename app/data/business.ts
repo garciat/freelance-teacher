@@ -1,6 +1,7 @@
 import z from "zod";
 
 import core from "@/app/data/_core.ts";
+import { traced } from "@/app/trace.ts";
 
 const BusinessRecordSchema = z.object({
   name: z.string(),
@@ -26,19 +27,21 @@ const fallback = {
   bic: "ABNANL2A",
 };
 
-export namespace Business {
-  export async function get(owner: string) {
+export class Business {
+  @traced("data")
+  static async get(owner: string) {
     const entry = await core.get(businessKey(owner));
 
     if (entry.versionstamp === null) {
-      await set(owner, fallback);
+      await this.set(owner, fallback);
       return fallback;
     }
 
     return BusinessRecordSchema.parse(entry.value);
   }
 
-  export async function set(owner: string, req: SetRequest) {
+  @traced("data")
+  static async set(owner: string, req: SetRequest) {
     const record = BusinessRecordSchema.encode(req);
 
     await core.set(businessKey(owner), record);

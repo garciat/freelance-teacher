@@ -5,6 +5,7 @@ import { InstantISO8601, MoneyAmountCodec } from "@/lib/codecs.ts";
 
 import core from "@/app/data/_core.ts";
 import { BasicEvent } from "@/app/data/_types.ts";
+import { traced } from "@/app/trace.ts";
 
 const InvoiceRecordSchema = z.object({
   sequenceNumber: z.bigint(),
@@ -52,8 +53,9 @@ export type CreateRequest = {
   };
 };
 
-export namespace Invoice {
-  export async function* list(owner: string) {
+export class Invoice {
+  @traced("data")
+  static async *list(owner: string) {
     for await (
       const entry of await core.list(
         { prefix: collectionKey(owner) },
@@ -65,7 +67,8 @@ export namespace Invoice {
     }
   }
 
-  export async function get(owner: string, id: bigint) {
+  @traced("data")
+  static async get(owner: string, id: bigint) {
     const record = await core.get(recordKey(owner, id));
     if (record.versionstamp === null) {
       throw new Error("not found");
@@ -73,7 +76,8 @@ export namespace Invoice {
     return InvoiceRecordSchema.parse(record.value);
   }
 
-  export async function maxSequenceNumber(owner: string) {
+  @traced("data")
+  static async maxSequenceNumber(owner: string) {
     for await (
       const entry of await core.list(
         { prefix: collectionKey(owner) },
@@ -87,7 +91,8 @@ export namespace Invoice {
     return null;
   }
 
-  export async function create(owner: string, req: CreateRequest) {
+  @traced("data")
+  static async create(owner: string, req: CreateRequest) {
     const record = InvoiceRecordSchema.encode({
       ...req,
       events: {
@@ -100,8 +105,9 @@ export namespace Invoice {
     await core.set(recordKey(owner, req.sequenceNumber), record);
   }
 
-  export async function markFinalized(owner: string, id: bigint) {
-    const invoice = await get(owner, id);
+  @traced("data")
+  static async markFinalized(owner: string, id: bigint) {
+    const invoice = await this.get(owner, id);
 
     if (invoice.events.finalized) {
       throw new Error("already finalized");
@@ -120,8 +126,9 @@ export namespace Invoice {
     await core.set(recordKey(owner, id), InvoiceRecordSchema.encode(updated));
   }
 
-  export async function markPaid(owner: string, id: bigint) {
-    const invoice = await get(owner, id);
+  @traced("data")
+  static async markPaid(owner: string, id: bigint) {
+    const invoice = await this.get(owner, id);
 
     if (!invoice.events.finalized) {
       throw new Error("not finalized");

@@ -1,6 +1,7 @@
 import z from "zod";
 
 import core from "@/app/data/_core.ts";
+import { traced } from "@/app/trace.ts";
 
 const StudentRecordSchema = z.object({
   id: z.uuid(),
@@ -50,8 +51,9 @@ export type UpdateRequest = {
   };
 };
 
-export namespace Student {
-  export async function* list(
+export class Student {
+  @traced("data")
+  static async *list(
     owner: string,
     options?: { includeInactive: boolean },
   ): AsyncGenerator<StudentRecord> {
@@ -68,7 +70,8 @@ export namespace Student {
     }
   }
 
-  export async function create(
+  @traced("data")
+  static async create(
     owner: string,
     req: CreateRequest,
   ) {
@@ -83,7 +86,8 @@ export namespace Student {
     await core.set(studentKeyOne(owner, id), record);
   }
 
-  export async function get(
+  @traced("data")
+  static async get(
     owner: string,
     id: string,
   ) {
@@ -94,7 +98,8 @@ export namespace Student {
     return StudentRecordSchema.parse(entry.value);
   }
 
-  export async function update(
+  @traced("data")
+  static async update(
     owner: string,
     id: string,
     req: UpdateRequest,
@@ -109,11 +114,12 @@ export namespace Student {
     core.set(studentKeyOne(owner, id), StudentRecordSchema.encode(record));
   }
 
-  export async function remove(
+  @traced("data")
+  static async remove(
     owner: string,
     id: string,
   ) {
-    const record = await get(owner, id);
+    const record = await this.get(owner, id);
 
     const updated = { ...record, status: "inactive" } satisfies StudentRecord;
 
