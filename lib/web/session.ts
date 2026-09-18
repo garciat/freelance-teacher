@@ -1,5 +1,6 @@
 import z from "zod";
 import {
+  Cookie,
   deleteCookie,
   getCookies,
   setCookie,
@@ -9,6 +10,7 @@ import { JWTPayload, jwtVerify, SignJWT } from "npm:jose@^6";
 import { Decorator } from "@/lib/web/decorator/types.ts";
 import { decoratorForReq } from "@/lib/web/decorator/base.ts";
 import { createCtxKey, Ctx } from "@/lib/web/ctx.ts";
+import { ExtraParser } from "@/lib/web/types.ts";
 
 export class SessionItem<T> {
   private readonly key = createCtxKey<T | null>("session");
@@ -19,6 +21,7 @@ export class SessionItem<T> {
       readonly cookieName: string;
       readonly ttl: Temporal.Duration;
       readonly schema: z.ZodType<T>;
+      readonly sameSite?: Cookie["sameSite"];
     },
   ) {}
 
@@ -28,7 +31,7 @@ export class SessionItem<T> {
 
   async setCookie(
     value: T,
-    headers: Headers = new Headers(),
+    headers: HeadersInit = {},
   ): Promise<Headers> {
     const expiration = Temporal.Now.zonedDateTimeISO().add(this.options.ttl);
 
@@ -50,7 +53,7 @@ export class SessionItem<T> {
       value: jwt,
       httpOnly: true,
       secure: true,
-      sameSite: "Lax",
+      sameSite: this.options.sameSite ?? "Lax",
       maxAge: Math.floor(this.options.ttl.total("seconds")),
       path: "/",
     });
@@ -58,7 +61,7 @@ export class SessionItem<T> {
     return copy;
   }
 
-  dropCookie(headers: Headers = new Headers()): Headers {
+  dropCookie(headers: HeadersInit = {}): Headers {
     const copy = new Headers(headers);
     deleteCookie(copy, this.options.cookieName, {
       httpOnly: true,
@@ -70,6 +73,16 @@ export class SessionItem<T> {
 
   decorator(): Decorator {
     return decoratorForReq(this.key, (req) => this.read(req));
+  }
+
+  extra(): ExtraParser<T> {
+    return async (ctx) => {
+      const value = await this.read(ctx.req);
+      if (value === null) {
+        throw new Response(`could not read session item`, { status: 400 });
+      }
+      return value;
+    };
   }
 
   private async read(req: Request): Promise<T | null> {
