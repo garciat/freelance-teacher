@@ -10,6 +10,62 @@ export type UIFieldMeta = {
 
 export const FormRegistry = z.registry<UIFieldMeta>();
 
+const BasicFormDataSchema = z.record(z.string(), z.string());
+
+type BasicFormData = z.output<typeof BasicFormDataSchema>;
+
+type BasicFormDataSchemaShape = Record<string, z.ZodType<unknown, string>>;
+
+export function makePostSchema<T extends z.ZodRawShape>(
+  schema: z.ZodObject<T> & z.ZodType<unknown, BasicFormData>,
+) {
+  return z.discriminatedUnion("action", [
+    z.object({
+      action: z.literal("cancel"),
+      _referrer: z.url().optional(),
+    }) satisfies z.ZodType<unknown, BasicFormData>,
+    schema.extend({
+      action: z.literal("save"),
+      _referrer: z.url().optional(),
+    }), // sadly, can't: satisfies z.ZodType<unknown, BasicFormData>
+  ]);
+}
+
+export type SchemaBasedFormProps<T extends z.ZodRawShape> = {
+  schema: z.ZodObject<T> & z.ZodType<unknown, BasicFormData>;
+  value?: z.output<z.ZodObject<T>>;
+};
+
+export const SchemaBasedForm = <T extends z.ZodRawShape>({
+  schema,
+  value,
+}: SchemaBasedFormProps<T>) => {
+  const fields = generateFormConfig(schema);
+
+  const record = value && schema.encode(value);
+
+  return (
+    <div className="schema-form">
+      {fields.map((field) => (
+        <div key={field.name} className="form-group">
+          <label htmlFor={field.name}>
+            {field.label}
+          </label>
+          {renderField(field, record)}
+        </div>
+      ))}
+      <footer className="actions">
+        <button type="submit" name="action" value="save" className="primary">
+          OK
+        </button>
+        <button type="submit" name="action" value="cancel" formNoValidate>
+          Cancel
+        </button>
+      </footer>
+    </div>
+  );
+};
+
 interface FormFieldConfig extends UIFieldMeta {
   name: string;
   required: boolean;
@@ -36,62 +92,6 @@ function generateFormConfig(
     }
   }());
 }
-
-function makeFormDataCodec<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
-  return z.codec(
-    z.record(z.string(), z.string()),
-    schema,
-    {
-      decode: (value) => value as z.input<typeof schema>,
-      encode: (value) => value as Record<string, string>,
-    },
-  );
-}
-export function makePostSchema<T extends z.ZodRawShape>(
-  schema: z.ZodObject<T>,
-) {
-  return z.discriminatedUnion("action", [
-    z.object({ action: z.literal("cancel"), _referrer: z.url().optional() }),
-    schema.extend({ action: z.literal("save"), _referrer: z.url().optional() }),
-  ]);
-}
-
-type SchemaBasedFormProps<T extends z.ZodRawShape> = {
-  schema: z.ZodObject<T>;
-  value?: z.output<z.ZodObject<T>>;
-};
-
-export const SchemaBasedForm = <T extends z.ZodRawShape>({
-  schema,
-  value,
-}: SchemaBasedFormProps<T>) => {
-  const fields = generateFormConfig(schema);
-
-  const codec = makeFormDataCodec(schema);
-
-  const record = value && codec.encode(value);
-
-  return (
-    <div className="schema-form">
-      {fields.map((field) => (
-        <div key={field.name} className="form-group">
-          <label htmlFor={field.name}>
-            {field.label}
-          </label>
-          {renderField(field, record)}
-        </div>
-      ))}
-      <footer className="actions">
-        <button type="submit" name="action" value="save" className="primary">
-          OK
-        </button>
-        <button type="submit" name="action" value="cancel" formNoValidate>
-          Cancel
-        </button>
-      </footer>
-    </div>
-  );
-};
 
 function renderField(field: FormFieldConfig, record?: Record<string, string>) {
   switch (field.type) {
