@@ -61,8 +61,8 @@ export const RouteInvoiceIndex = route(
             Draft New Invoice
           </Link>
         </div>
-        {invoicesByMonth.entries().map(([yearMonthStr, invoices]) => (
-          <section>
+        {invoicesByMonth.entries().toArray().map(([yearMonthStr, invoices]) => (
+          <section key={yearMonthStr}>
             <h2>
               {Temporal.PlainYearMonth.from(yearMonthStr)
                 .toLocaleString("en", { dateStyle: "long" })}
