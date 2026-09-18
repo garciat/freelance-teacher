@@ -115,7 +115,10 @@ export class Student {
 
     const record = { ...req, id, status: "active" } satisfies StudentRecord;
 
-    core.set(studentKeyOne(owner, id), StudentRecordSchema.encode(record));
+    await core.set(
+      studentKeyOne(owner, id),
+      StudentRecordSchema.encode(record),
+    );
   }
 
   @traced("data")
@@ -127,7 +130,10 @@ export class Student {
 
     const updated = { ...record, status: "inactive" } satisfies StudentRecord;
 
-    core.set(studentKeyOne(owner, id), StudentRecordSchema.encode(updated));
+    await core.set(
+      studentKeyOne(owner, id),
+      StudentRecordSchema.encode(updated),
+    );
   }
 }
 
