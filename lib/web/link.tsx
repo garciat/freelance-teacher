@@ -1,9 +1,5 @@
 import { MaybeProp } from "@/lib/generic.ts";
-import {
-  formatRouteStrict,
-  HttpMethod,
-  RouteDescriptor,
-} from "@/lib/web/route.ts";
+import { formatRouteStrict, RouteDescriptor } from "@/lib/web/route.ts";
 
 type LinkProps<P, Q> =
   & {
@@ -19,7 +15,7 @@ export const Link = <P, Q>(
 
 type FormProps<P, Q> =
   & {
-    to: RouteDescriptor<HttpMethod, string, P, Q, unknown, unknown>;
+    to: RouteDescriptor<"GET" | "POST", string, P, Q, unknown, unknown>;
   }
   & MaybeProp<"path", NoInfer<P>>
   & MaybeProp<"query", NoInfer<Q>>
