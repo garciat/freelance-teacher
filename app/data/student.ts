@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { kv } from "@/app/data/_core.ts";
+import { kv, tryCommit } from "@/app/data/_core.ts";
 import { traced } from "@/app/trace.ts";
 
 const StudentRecordSchema = z.object({
@@ -87,7 +87,13 @@ export class Student {
       status: "active",
     });
 
-    await kv.set(studentKeyOne(owner, id), record);
+    const key = studentKeyOne(owner, id);
+
+    const operation = kv.atomic()
+      .check({ key, versionstamp: null })
+      .set(key, record);
+
+    await tryCommit(operation);
   }
 
   @traced("data")
@@ -102,6 +108,7 @@ export class Student {
     return StudentRecordSchema.parse(entry.value);
   }
 
+  // TODO expected version
   @traced("data")
   static async update(
     owner: string,
@@ -121,6 +128,7 @@ export class Student {
     );
   }
 
+  // TODO expected version
   @traced("data")
   static async remove(
     owner: string,

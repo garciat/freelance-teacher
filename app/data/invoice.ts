@@ -3,7 +3,7 @@ import { Dinero } from "dinero.js";
 
 import { InstantISO8601, MoneyAmountCodec } from "@/lib/codecs.ts";
 
-import { kv } from "@/app/data/_core.ts";
+import { kv, tryCommit } from "@/app/data/_core.ts";
 import { BasicEvent } from "@/app/data/_types.ts";
 import { traced } from "@/app/trace.ts";
 
@@ -106,9 +106,16 @@ export class Invoice {
       },
     });
 
-    await kv.set(recordKey(owner, req.sequenceNumber), record);
+    const key = recordKey(owner, req.sequenceNumber);
+
+    const operation = kv.atomic()
+      .check({ key, versionstamp: null })
+      .set(key, record);
+
+    await tryCommit(operation);
   }
 
+  // TODO expected version
   @traced("data")
   static async markFinalized(owner: string, id: bigint) {
     const invoice = await this.get(owner, id);
@@ -130,6 +137,7 @@ export class Invoice {
     await kv.set(recordKey(owner, id), InvoiceRecordSchema.encode(updated));
   }
 
+  // TODO expected version
   @traced("data")
   static async markPaid(owner: string, id: bigint) {
     const invoice = await this.get(owner, id);
