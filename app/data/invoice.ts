@@ -3,7 +3,7 @@ import { Dinero } from "dinero.js";
 
 import { InstantISO8601, MoneyAmountCodec } from "@/lib/codecs.ts";
 
-import { kv, tryCommit } from "@/app/data/_core.ts";
+import { kv } from "@/app/data/_core.ts";
 import { BasicEvent } from "@/app/data/_types.ts";
 import { traced } from "@/app/trace.ts";
 
@@ -108,11 +108,14 @@ export class Invoice {
 
     const key = recordKey(owner, req.sequenceNumber);
 
-    const operation = kv.atomic()
+    const result = await kv.atomic()
       .check({ key, versionstamp: null })
-      .set(key, record);
+      .set(key, record)
+      .commit();
 
-    await tryCommit(operation);
+    if (!result.ok) {
+      throw new Error("duplicate sequence number");
+    }
   }
 
   // TODO expected version

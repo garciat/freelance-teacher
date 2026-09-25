@@ -6,6 +6,7 @@ import { Responses } from "@/lib/web/respond.ts";
 import { descriptor, formatRoute, route } from "@/lib/web/route.ts";
 import { SessionItem } from "@/lib/web/session.ts";
 
+import { User } from "@/app/data/user.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { AuthSession } from "@/app/session.ts";
 import { Form } from "@/lib/web/link.tsx";
@@ -109,24 +110,29 @@ export const routes = [
       const res = await GoogleAuthClient.getToken(body.code);
 
       if (!res.tokens.id_token) {
-        throw new Error("no id_token?");
+        throw new TypeError("no id_token?");
       }
 
       const ticket = await GoogleAuthClient.verifyIdToken({
         idToken: res.tokens.id_token,
       });
 
-      const email = ticket.getPayload()?.email;
+      const payload = ticket.getPayload();
 
-      if (!email) {
-        console.log(ticket);
-        throw new Error("no email?");
+      if (!payload) {
+        throw new TypeError("no payload?");
       }
+
+      if (!payload.email) {
+        throw new TypeError("no email?");
+      }
+
+      const user = await handleGoogleUser(payload.sub, payload.email);
 
       return new Response("", {
         status: 303,
         headers: await AuthSession.setCookie(
-          { email },
+          { userId: user.id },
           GoogleAuthInitSessionItem.dropCookie({
             "location": "/",
           }),
@@ -136,3 +142,30 @@ export const routes = [
     { init: GoogleAuthInitSessionItem.extra() },
   ),
 ];
+
+async function handleGoogleUser(sub: string, email: string) {
+  const userResult = await User.findByGoogleSub(sub);
+
+  switch (userResult.type) {
+    case "OK":
+      return userResult.record;
+    case "NOT_FOUND": {
+      const createResult = await User.createWithGoogle(sub, email);
+
+      // TODO email verification?
+
+      switch (createResult.type) {
+        case "OK":
+          return createResult.record;
+        case "GOOGLE_SUB_EXISTS":
+          throw new Error("google account creation conflict");
+        case "EMAIL_EXISTS":
+          throw new Error("google account creation conflict");
+        default:
+          throw new TypeError(`unexpected: ${createResult satisfies never}`);
+      }
+    }
+    default:
+      throw new TypeError(`unexpected: ${userResult satisfies never}`);
+  }
+}

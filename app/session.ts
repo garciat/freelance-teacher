@@ -3,7 +3,7 @@ import z from "zod";
 import { SessionItem } from "@/lib/web/session.ts";
 
 const AuthSessionSchema = z.object({
-  email: z.string(),
+  userId: z.uuid(),
 });
 
 const secret = Deno.env.get("APP_SESSION_AUTH_SECRET");
