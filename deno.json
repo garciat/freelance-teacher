@@ -11,7 +11,8 @@
     "@react-pdf/renderer": "npm:@react-pdf/renderer@^4",
     "zod": "npm:zod@^4",
     "@opentelemetry/api": "npm:@opentelemetry/api@^1",
-    "@std/http": "jsr:@std/http@^1"
+    "@std/http": "jsr:@std/http@^1",
+    "@std/path": "jsr:@std/path@1.1.6"
   },
   "tasks": {
     "dev": "OTEL_DENO=true deno watch --allow-all --env-file --unstable-kv app/main.tsx"

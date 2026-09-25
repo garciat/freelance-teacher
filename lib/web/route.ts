@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { serveDir, serveFile } from "@std/http";
+import { eTag, ifNoneMatch, serveDir, serveFile, STATUS_CODE } from "@std/http";
+import { HEADER } from "@std/http/unstable-header";
+import { join } from "@std/path/join";
+import { normalize as posixNormalize } from "@std/path/posix/normalize";
 
 import * as esbuild from "esbuild";
 
@@ -311,8 +314,17 @@ export function localFile(
   };
 }
 
+const BUNDLE_CACHE = new Map<
+  string,
+  {
+    // will cache indefinitely if there is no mtime available
+    etag: string | undefined;
+    script: string;
+  }
+>();
+
 export function bundle(
-  urlRoot: string,
+  urlRoot: `/${string}/`,
   fsRoot: string,
 ): RouteHandler {
   const actualFsRoot = fsRoot.startsWith("file://")
@@ -320,31 +332,83 @@ export function bundle(
     : fsRoot;
 
   return async ({ ctx }) => {
-    if (
-      ctx.url.pathname.startsWith(urlRoot) &&
-      (ctx.url.pathname.endsWith(".tsx") || ctx.url.pathname.endsWith(".ts"))
-    ) {
-      const path = `${actualFsRoot}/${ctx.url.pathname.slice(urlRoot.length)}`;
+    const decodedUrl = decodeURIComponent(ctx.url.pathname);
+    const normalizedPath = posixNormalize(decodedUrl);
 
-      const result = await esbuild.build({
-        plugins: [],
-        entryPoints: [path],
-        bundle: false,
-        format: "esm",
-        write: false,
-        jsx: "automatic",
-      });
-
-      if (result.errors.length) {
-        throw new Error(result.errors.map((err) => err.text).join("\n"));
-      }
-
-      return new Response(result.outputFiles?.at(0)?.text, {
-        headers: {
-          "content-type": "application/javascript",
-        },
-      });
+    if (!normalizedPath.startsWith(urlRoot)) {
+      return null;
     }
-    return null;
+
+    if (normalizedPath !== decodedUrl) {
+      const target = new URL(ctx.url);
+      target.pathname = normalizedPath;
+      return Response.redirect(target, 301);
+    }
+
+    if (!/\.(tsx|ts)$/.test(normalizedPath)) {
+      return null;
+    }
+
+    const fsPath = join(actualFsRoot, normalizedPath.slice(urlRoot.length));
+
+    const fileInfo = await Deno.stat(fsPath).catch((err) => {
+      if (err instanceof Deno.errors.NotFound) {
+        return null;
+      } else {
+        throw err;
+      }
+    });
+
+    if (fileInfo === null || !fileInfo.isFile) {
+      return new Response(null, { status: 404 });
+    }
+
+    const etag = await eTag(fileInfo);
+
+    const headers = new Headers({
+      [HEADER.ContentType]: "application/javascript",
+      [HEADER.ETag]: etag ?? "",
+    });
+
+    if (etag) {
+      const ifNoneMatchValue = ctx.req.headers.get(HEADER.IfNoneMatch);
+
+      if (!ifNoneMatch(ifNoneMatchValue, etag)) {
+        return new Response(null, {
+          status: STATUS_CODE.NotModified,
+          headers,
+        });
+      }
+    }
+
+    {
+      const cache = BUNDLE_CACHE.get(fsPath);
+      if (cache && cache.etag === etag) {
+        return new Response(cache.script, { headers });
+      }
+    }
+
+    const result = await esbuild.build({
+      plugins: [],
+      entryPoints: [fsPath],
+      bundle: false,
+      format: "esm",
+      write: false,
+      jsx: "automatic",
+    });
+
+    if (result.errors.length) {
+      throw new Error(result.errors.map((err) => err.text).join("\n"));
+    }
+
+    const script = result.outputFiles?.at(0)?.text;
+
+    if (script === undefined) {
+      throw new Error("no script?");
+    }
+
+    BUNDLE_CACHE.set(fsPath, { etag, script });
+
+    return new Response(script, { headers });
   };
 }

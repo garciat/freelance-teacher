@@ -29,15 +29,15 @@ export default decorators([
       import.meta.resolve("./static/favicon.ico"),
     ),
     bundle(
-      "/shared",
+      "/shared/",
       import.meta.resolve("./shared"),
     ),
     bundle(
-      "/frontend",
+      "/frontend/",
       import.meta.resolve("./frontend"),
     ),
     bundle(
-      "/lib",
+      "/lib/",
       import.meta.resolve("../lib"),
     ),
   ]),
