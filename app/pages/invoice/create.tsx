@@ -9,7 +9,7 @@ import { Invoice } from "@/app/data/invoice.ts";
 import { Student } from "@/app/data/student.ts";
 import { renderInvoiceToBuffer } from "@/app/shared/invoice.tsx";
 
-import { Extras } from "@/app/pages/_extra.ts";
+import { UserExtra } from "@/app/pages/_extra.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { PagesInvoice } from "@/app/pages/invoice/_meta.ts";
 import { makeToastHeaders } from "@/lib/web/toast/backend.ts";
@@ -122,7 +122,7 @@ export const RouteInvoiceCreate = {
         </PageLayout>
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 
   post: route(
@@ -189,6 +189,6 @@ export const RouteInvoiceCreate = {
         makeToastHeaders("✅ New invoice created"),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 } as const;

@@ -3,7 +3,7 @@ import { formatRoute, route } from "@/lib/web/route.ts";
 
 import { Invoice } from "@/app/data/invoice.ts";
 
-import { Extras } from "@/app/pages/_extra.ts";
+import { UserExtra } from "@/app/pages/_extra.ts";
 import { PagesInvoice } from "@/app/pages/invoice/_meta.ts";
 import { makeToastHeaders } from "@/lib/web/toast/backend.ts";
 
@@ -21,7 +21,7 @@ export const RouteInvoice = {
         },
       });
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 
   markFinalized: route(
@@ -34,7 +34,7 @@ export const RouteInvoice = {
         makeToastHeaders("✅ Invoice finalized"),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 
   markPaid: route(
@@ -47,6 +47,6 @@ export const RouteInvoice = {
         makeToastHeaders("✅ Invoice payment confirmed"),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 } as const;

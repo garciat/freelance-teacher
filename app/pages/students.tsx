@@ -5,7 +5,7 @@ import { formatRoute, route } from "@/lib/web/route.ts";
 
 import { AgeCategory, Student } from "@/app/data/student.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
-import { Extras } from "@/app/pages/_extra.ts";
+import { UserExtra } from "@/app/pages/_extra.ts";
 import { PagesStudent, RegisterFormSchema } from "@/app/pages/student/_meta.ts";
 import { makeToastHeaders } from "@/lib/web/toast/backend.ts";
 
@@ -89,7 +89,7 @@ export const routes = [
         </PageLayout>
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
   route(
     PagesStudent.register.get,
@@ -102,7 +102,7 @@ export const routes = [
         </Form>
       </PageLayout>
     ),
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
   route(
     PagesStudent.register.post,
@@ -130,7 +130,7 @@ export const routes = [
         makeToastHeaders("✅ New student registered"),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
   route(
     PagesStudent.manage.get,
@@ -157,7 +157,7 @@ export const routes = [
         </PageLayout>,
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
   route(
     PagesStudent.manage.post,
@@ -191,7 +191,7 @@ export const routes = [
         makeToastHeaders("✅ Student information updated"),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
   route(
     PagesStudent.delete.post,
@@ -200,6 +200,6 @@ export const routes = [
 
       return redirect303(formatRoute(PagesStudent.index, {}));
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 ];

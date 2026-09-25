@@ -12,7 +12,7 @@ import { descriptor, formatRoute, route } from "@/lib/web/route.ts";
 
 import { Business } from "@/app/data/business.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
-import { Extras } from "@/app/pages/_extra.ts";
+import { UserExtra } from "@/app/pages/_extra.ts";
 import { makeToastHeaders } from "@/lib/web/toast/backend.ts";
 
 const UpdateFormSchema = z.object({
@@ -72,7 +72,7 @@ export const routes = [
         </PageLayout>
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
   route(
     descriptors.save,
@@ -88,6 +88,6 @@ export const routes = [
         makeToastHeaders("✅ Business information updated"),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 ];

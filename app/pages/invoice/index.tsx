@@ -4,7 +4,7 @@ import { route } from "@/lib/web/route.ts";
 import { Invoice, InvoiceRecord } from "@/app/data/invoice.ts";
 import { Student } from "@/app/data/student.ts";
 
-import { Extras } from "@/app/pages/_extra.ts";
+import { UserExtra } from "@/app/pages/_extra.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { PagesInvoice } from "@/app/pages/invoice/_meta.ts";
 import { PagesStudent } from "@/app/pages/student/_meta.ts";
@@ -161,5 +161,5 @@ export const RouteInvoiceIndex = route(
       </PageLayout>
     );
   },
-  { user: Extras.User.required() },
+  { user: UserExtra.required() },
 );

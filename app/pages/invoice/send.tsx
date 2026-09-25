@@ -8,7 +8,7 @@ import { Business, BusinessRecord } from "@/app/data/business.ts";
 import { Invoice } from "@/app/data/invoice.ts";
 import { Student, StudentRecord } from "@/app/data/student.ts";
 
-import { Extras } from "@/app/pages/_extra.ts";
+import { UserExtra } from "@/app/pages/_extra.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { ResendClient } from "@/app/email.ts";
 import { renderToString } from "react-dom/server";
@@ -138,7 +138,7 @@ export const RouteInvoiceSend = {
         </PageLayout>
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 
   post: route(
@@ -183,6 +183,6 @@ export const RouteInvoiceSend = {
         makeToastHeaders(`✅ E-mail sent`),
       );
     },
-    { user: Extras.User.required() },
+    { user: UserExtra.required() },
   ),
 } as const;
