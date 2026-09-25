@@ -206,6 +206,24 @@ export function route<
     const match = pattern.exec(ctx.url);
     if (match === null) return null;
 
+    const extraData = await Promise.all(
+      Object.entries(extra ?? {})
+        .map(
+          async ([key, fn]) => ([key, await fn(ctx)] as [string, unknown]),
+        ),
+    ).then(
+      (entries) => Object.fromEntries(entries) as ExtraParams<Extra>,
+    ).catch((err) => {
+      if (err instanceof Response) {
+        return err;
+      }
+      throw err;
+    });
+
+    if (extraData instanceof Response) {
+      return extraData;
+    }
+
     const path = descriptor.types.path.safeDecode(match.pathname.groups);
     if (!path.success) {
       return new Response(
@@ -225,24 +243,6 @@ export function route<
       return new Response(
         `invalid body\n${z.prettifyError(body.error)}`,
       );
-    }
-
-    const extraData = await Promise.all(
-      Object.entries(extra ?? {})
-        .map(
-          async ([key, fn]) => ([key, await fn(ctx)] as [string, unknown]),
-        ),
-    ).then(
-      (entries) => Object.fromEntries(entries) as ExtraParams<Extra>,
-    ).catch((err) => {
-      if (err instanceof Response) {
-        return err;
-      }
-      throw err;
-    });
-
-    if (extraData instanceof Response) {
-      return extraData;
     }
 
     const result = await delegate({
