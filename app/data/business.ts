@@ -23,7 +23,7 @@ const fallback = {
   location: "1016 EK Amsterdam",
   kvk: "12345678",
   vat: "NL812345678B01",
-  iban: "NL91 ABNA 0412 3456 78",
+  iban: "NL91ABNA0412345678",
   bic: "ABNANL2A",
 };
 

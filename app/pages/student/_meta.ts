@@ -1,55 +1,20 @@
 import z from "zod";
 
 import { Body } from "@/lib/web/body.ts";
-import { FormRegistry, makePostSchema } from "@/lib/web/forms.tsx";
+import { makePostSchema } from "@/lib/web/forms.tsx";
 import { Responses } from "@/lib/web/respond.ts";
 import { descriptor } from "@/lib/web/route.ts";
 
-// TODO stop using as form generator
+import { NonEmptyString } from "@/app/pages/_types.ts";
+
 export const RegisterFormSchema = z.object({
-  name: z.string().trim().nonempty().register(FormRegistry, {
-    label: "Name",
-    type: "text",
-    placeholder: "John Student",
-  }),
-  age_category: z.enum(["adult", "child"]).default("adult").register(
-    FormRegistry,
-    {
-      label: "Age Category",
-      type: "select",
-      options: [
-        { value: "adult", label: "Adult" },
-        { value: "child", label: "Child" },
-      ],
-    },
-  ),
-  billing_name: z.string().trim().nonempty().register(FormRegistry, {
-    label: "Billing Name",
-    type: "text",
-    placeholder: "Mary van Parent",
-  }),
-  billing_address: z.string().trim().nonempty().register(FormRegistry, {
-    label: "Billing Address",
-    type: "text",
-    placeholder: "Street 420",
-  }),
-  billing_location: z.string().trim().nonempty().register(FormRegistry, {
-    label: "Billing Location",
-    type: "text",
-    placeholder: "1013BH Amsterdam",
-  }),
-  contact_email: z.union([z.literal(""), z.email()]).register(FormRegistry, {
-    label: "Contact E-mail",
-    type: "text",
-    inputMode: "email",
-    placeholder: "hello@world.com",
-  }),
-  contact_whatsapp: z.string().trim().optional().register(FormRegistry, {
-    label: "Contact WhatsApp",
-    type: "text",
-    inputMode: "tel",
-    placeholder: "+31 612300789",
-  }),
+  name: NonEmptyString,
+  age_category: z.enum(["adult", "child"]),
+  billing_name: NonEmptyString,
+  billing_address: NonEmptyString,
+  billing_location: NonEmptyString,
+  contact_email: z.email(),
+  contact_whatsapp: z.string().trim(),
 });
 
 export const PagesStudent = {

@@ -1,12 +1,11 @@
-import { SchemaBasedForm } from "@/lib/web/forms.tsx";
 import { Form, Link } from "@/lib/web/link.tsx";
 import { jsx, redirect303 } from "@/lib/web/respond.ts";
 import { formatRoute, route } from "@/lib/web/route.ts";
 
-import { AgeCategory, Student } from "@/app/data/student.ts";
+import { AgeCategory, Student, StudentRecord } from "@/app/data/student.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { UserExtra } from "@/app/pages/_extra.ts";
-import { PagesStudent, RegisterFormSchema } from "@/app/pages/student/_meta.ts";
+import { PagesStudent } from "@/app/pages/student/_meta.ts";
 import { makeToastHeaders } from "@/lib/web/toast/backend.ts";
 
 // TODO split into app/pages/student/*
@@ -96,9 +95,7 @@ export const routes = [
     ({ user }) => (
       <PageLayout title="Students" user={user}>
         <Form to={PagesStudent.register.post}>
-          <SchemaBasedForm
-            schema={RegisterFormSchema}
-          />
+          <StudentEditForm record={undefined} />
         </Form>
       </PageLayout>
     ),
@@ -141,18 +138,8 @@ export const routes = [
         <PageLayout title="Students" user={user}>
           <Form to={PagesStudent.manage.post} path={{ id: path.id }}>
             <input type="hidden" name="_referrer" value={ctx.referrer} />
-            <SchemaBasedForm
-              schema={RegisterFormSchema}
-              value={{
-                name: record.name,
-                age_category: record.ageCategory,
-                billing_name: record.billing.name,
-                billing_address: record.billing.address,
-                billing_location: record.billing.location,
-                contact_email: record.contact?.email ?? "",
-                contact_whatsapp: record.contact?.whatsapp ?? "",
-              }}
-            />
+
+            <StudentEditForm record={record} />
           </Form>
         </PageLayout>,
       );
@@ -203,3 +190,96 @@ export const routes = [
     { user: UserExtra.required() },
   ),
 ];
+
+const StudentEditForm = ({ record }: { record: StudentRecord | undefined }) => (
+  <div className="schema-form">
+    <div className="form-group">
+      <label htmlFor="name">Name</label>
+      <input
+        name="name"
+        type="text"
+        defaultValue={record?.name}
+        placeholder="John Student"
+      />
+    </div>
+
+    <div className="form-group">
+      <label htmlFor="name">Age Cateogry</label>
+      <select name="age_category" defaultValue={record?.ageCategory}>
+        <option value="adult">Adult</option>
+        <option value="child">Child</option>
+      </select>
+    </div>
+
+    <div className="form-group">
+      <label htmlFor="billing_name">Billing Name</label>
+      <input
+        name="billing_name"
+        type="text"
+        defaultValue={record?.billing.name}
+        placeholder="Mary van Parent"
+      />
+    </div>
+
+    <div className="form-group">
+      <label htmlFor="billing_address">Billing Address</label>
+      <input
+        name="billing_address"
+        type="text"
+        defaultValue={record?.billing.address}
+        placeholder="Street 420"
+      />
+    </div>
+
+    <div className="form-group">
+      <label htmlFor="billing_location">Billing Location</label>
+      <input
+        name="billing_location"
+        type="text"
+        defaultValue={record?.billing.location}
+        placeholder="1013BH Amsterdam"
+      />
+    </div>
+
+    <div className="form-group">
+      <label htmlFor="contact_email">Contact E-mail</label>
+      <input
+        name="contact_email"
+        type="email"
+        inputMode="email"
+        defaultValue={record?.contact?.email}
+        placeholder="hello@world.com"
+      />
+    </div>
+
+    <div className="form-group">
+      <label htmlFor="contact_whatsapp">Contact WhatsApp</label>
+      <input
+        name="contact_whatsapp"
+        type="tel"
+        inputMode="tel"
+        defaultValue={record?.contact?.whatsapp}
+        placeholder="+31 612300789"
+      />
+    </div>
+
+    <footer className="actions">
+      <button
+        type="submit"
+        name="action"
+        value="save"
+        className="primary"
+      >
+        OK
+      </button>
+      <button
+        type="submit"
+        name="action"
+        value="cancel"
+        formNoValidate
+      >
+        Cancel
+      </button>
+    </footer>
+  </div>
+);
