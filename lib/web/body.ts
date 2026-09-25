@@ -1,28 +1,41 @@
 import { z } from "zod";
 
-export type BodyParser<T> = (req: Request) => Promise<z.ZodSafeParseResult<T>>;
-
-export namespace BodyParsers {
-  export function nil(): BodyParser<null> {
-    return (req) => Promise.resolve(z.null().safeParse(req.body));
-  }
-
-  export function formData<T>(type: z.ZodType<T>): BodyParser<T> {
-    return async (req) =>
-      type.safeDecode(Object.fromEntries((await req.formData()).entries()));
-  }
-}
+import { SizeLimitStream } from "@/lib/streams.ts";
 
 export namespace Body {
   export function formData<T>(
     type: z.ZodType<T, Record<string, string | File>>,
+    options: { maxBytes?: number } = {},
   ) {
+    const { maxBytes = 1 * 1024 * 1024 } = options;
+
     return z.codec(
       z.instanceof(Request),
       type,
       {
-        decode: async (req) =>
-          Object.fromEntries((await req.formData()).entries()),
+        decode: async (req) => {
+          const contentLength = req.headers.get("content-length");
+          if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+            throw new Error("payload too large");
+          }
+
+          if (!req.body) {
+            throw new Error("expected body");
+          }
+
+          const decoder = new Response(
+            req.body.pipeThrough(new SizeLimitStream(maxBytes)),
+            {
+              headers: {
+                "Content-Type": req.headers.get("content-type") ?? "",
+              },
+            },
+          );
+
+          const formData = await decoder.formData();
+
+          return Object.fromEntries(formData.entries());
+        },
         encode: (record) => {
           const body = new FormData();
           for (const [key, value] of Object.entries(record)) {
