@@ -3,7 +3,7 @@ import { Dinero } from "dinero.js";
 
 import { InstantISO8601, MoneyAmountCodec } from "@/lib/codecs.ts";
 
-import core from "@/app/data/_core.ts";
+import { kv } from "@/app/data/_core.ts";
 import { BasicEvent } from "@/app/data/_types.ts";
 import { traced } from "@/app/trace.ts";
 
@@ -56,7 +56,7 @@ export type CreateRequest = {
 export class Invoice {
   static async *list(owner: string) {
     for await (
-      const entry of await core.list(
+      const entry of await kv.list(
         { prefix: collectionKey(owner) },
         { reverse: true },
       )
@@ -73,7 +73,7 @@ export class Invoice {
 
   @traced("data")
   static async get(owner: string, id: bigint) {
-    const record = await core.get(recordKey(owner, id));
+    const record = await kv.get(recordKey(owner, id));
     if (record.versionstamp === null) {
       throw new Error("not found");
     }
@@ -83,7 +83,7 @@ export class Invoice {
   @traced("data")
   static async maxSequenceNumber(owner: string) {
     for await (
-      const entry of await core.list(
+      const entry of await kv.list(
         { prefix: collectionKey(owner) },
         { reverse: true, batchSize: 1 },
       )
@@ -106,7 +106,7 @@ export class Invoice {
       },
     });
 
-    await core.set(recordKey(owner, req.sequenceNumber), record);
+    await kv.set(recordKey(owner, req.sequenceNumber), record);
   }
 
   @traced("data")
@@ -127,7 +127,7 @@ export class Invoice {
       },
     } satisfies InvoiceRecord;
 
-    await core.set(recordKey(owner, id), InvoiceRecordSchema.encode(updated));
+    await kv.set(recordKey(owner, id), InvoiceRecordSchema.encode(updated));
   }
 
   @traced("data")
@@ -152,7 +152,7 @@ export class Invoice {
       },
     } satisfies InvoiceRecord;
 
-    await core.set(recordKey(owner, id), InvoiceRecordSchema.encode(updated));
+    await kv.set(recordKey(owner, id), InvoiceRecordSchema.encode(updated));
   }
 }
 

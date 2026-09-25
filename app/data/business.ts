@@ -1,6 +1,6 @@
 import z from "zod";
 
-import core from "@/app/data/_core.ts";
+import { kv } from "@/app/data/_core.ts";
 import { traced } from "@/app/trace.ts";
 
 const BusinessRecordSchema = z.object({
@@ -30,7 +30,7 @@ const fallback = {
 export class Business {
   @traced("data")
   static async get(owner: string) {
-    const entry = await core.get(businessKey(owner));
+    const entry = await kv.get(businessKey(owner));
 
     if (entry.versionstamp === null) {
       await this.set(owner, fallback);
@@ -44,7 +44,7 @@ export class Business {
   static async set(owner: string, req: SetRequest) {
     const record = BusinessRecordSchema.encode(req);
 
-    await core.set(businessKey(owner), record);
+    await kv.set(businessKey(owner), record);
   }
 }
 

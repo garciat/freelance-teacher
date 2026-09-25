@@ -1,6 +1,6 @@
 import z from "zod";
 
-import core from "@/app/data/_core.ts";
+import { kv } from "@/app/data/_core.ts";
 import { traced } from "@/app/trace.ts";
 
 const StudentRecordSchema = z.object({
@@ -57,7 +57,7 @@ export class Student {
     options?: { includeInactive: boolean },
   ): AsyncGenerator<StudentRecord> {
     for await (
-      const entry of await core.list({ prefix: studentKeyAll(owner) })
+      const entry of await kv.list({ prefix: studentKeyAll(owner) })
     ) {
       const record = StudentRecordSchema.parse(entry.value);
 
@@ -87,7 +87,7 @@ export class Student {
       status: "active",
     });
 
-    await core.set(studentKeyOne(owner, id), record);
+    await kv.set(studentKeyOne(owner, id), record);
   }
 
   @traced("data")
@@ -95,7 +95,7 @@ export class Student {
     owner: string,
     id: string,
   ) {
-    const entry = await core.get(studentKeyOne(owner, id));
+    const entry = await kv.get(studentKeyOne(owner, id));
     if (entry.versionstamp === null) {
       throw new Error("not found");
     }
@@ -108,14 +108,14 @@ export class Student {
     id: string,
     req: UpdateRequest,
   ) {
-    const entry = await core.get(studentKeyOne(owner, id));
+    const entry = await kv.get(studentKeyOne(owner, id));
     if (entry.versionstamp === null) {
       throw new Error("not found");
     }
 
     const record = { ...req, id, status: "active" } satisfies StudentRecord;
 
-    await core.set(
+    await kv.set(
       studentKeyOne(owner, id),
       StudentRecordSchema.encode(record),
     );
@@ -130,7 +130,7 @@ export class Student {
 
     const updated = { ...record, status: "inactive" } satisfies StudentRecord;
 
-    await core.set(
+    await kv.set(
       studentKeyOne(owner, id),
       StudentRecordSchema.encode(updated),
     );
