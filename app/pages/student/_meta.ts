@@ -6,8 +6,10 @@ import { Responses } from "@/lib/web/respond.ts";
 import { descriptor } from "@/lib/web/route.ts";
 
 import { NonEmptyString } from "@/app/pages/_types.ts";
+import { VersionSchema } from "@/app/data/_types.ts";
 
 export const RegisterFormSchema = z.object({
+  _version: VersionSchema,
   name: NonEmptyString,
   age_category: z.enum(["adult", "child"]),
   billing_name: NonEmptyString,

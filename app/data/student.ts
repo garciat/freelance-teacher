@@ -2,6 +2,7 @@ import z from "zod";
 
 import { kv } from "@/app/data/_core.ts";
 import { traced } from "@/app/trace.ts";
+import { parseEntry, Version } from "@/app/data/_types.ts";
 
 const StudentRecordSchema = z.object({
   id: z.uuid(),
@@ -38,6 +39,7 @@ export type CreateRequest = {
 };
 
 export type UpdateRequest = {
+  _version: Version;
   name: string;
   ageCategory: AgeCategory;
   billing: {
@@ -104,31 +106,53 @@ export class Student {
     owner: string,
     id: string,
   ) {
+    return (await this._get(owner, id)).record;
+  }
+
+  @traced("data")
+  static async getForUpdate(
+    owner: string,
+    id: string,
+  ) {
+    return await this._get(owner, id);
+  }
+
+  private static async _get(
+    owner: string,
+    id: string,
+  ) {
     const entry = await kv.get(studentKeyOne(owner, id));
+
     if (entry.versionstamp === null) {
       throw new Error("not found");
     }
-    return StudentRecordSchema.parse(entry.value);
+
+    return parseEntry(entry, (v) => StudentRecordSchema.parse(v));
   }
 
-  // TODO expected version
   @traced("data")
   static async update(
     owner: string,
     id: string,
     req: UpdateRequest,
   ) {
-    const entry = await kv.get(studentKeyOne(owner, id));
-    if (entry.versionstamp === null) {
-      throw new Error("not found");
+    const key = studentKeyOne(owner, id);
+    const storable = StudentRecordSchema.encode({
+      ...req,
+      id,
+      status: "active",
+    });
+
+    const result = await kv.atomic()
+      .check({ key, versionstamp: req._version })
+      .set(key, storable)
+      .commit();
+
+    if (!result.ok) {
+      return { type: "bad_version" } as const;
     }
 
-    const record = { ...req, id, status: "active" } satisfies StudentRecord;
-
-    await kv.set(
-      studentKeyOne(owner, id),
-      StudentRecordSchema.encode(record),
-    );
+    return { type: "ok" } as const;
   }
 
   // TODO expected version

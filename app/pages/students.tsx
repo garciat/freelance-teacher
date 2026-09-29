@@ -132,12 +132,14 @@ export const routes = [
   route(
     PagesStudent.manage.get,
     async ({ ctx, path, user }) => {
-      const record = await Student.get(user.id, path.id);
+      const { record, version } = await Student.getForUpdate(user.id, path.id);
 
       return jsx(
         <PageLayout title="Students" user={user}>
           <Form to={PagesStudent.manage.post} path={{ id: path.id }}>
             <input type="hidden" name="_referrer" value={ctx.referrer} />
+
+            <input type="hidden" name="_version" value={version} />
 
             <StudentEditForm record={record} />
           </Form>
@@ -155,10 +157,11 @@ export const routes = [
         );
       }
 
-      await Student.update(
+      const result = await Student.update(
         user.id,
         path.id,
         {
+          _version: body._version,
           name: body.name,
           ageCategory: body.age_category,
           billing: {
@@ -173,10 +176,21 @@ export const routes = [
         },
       );
 
-      return redirect303(
-        body._referrer ?? formatRoute(PagesStudent.index, {}),
-        makeToastHeaders("✅ Student information updated"),
-      );
+      switch (result.type) {
+        case "bad_version":
+          // TODO do this without loss of user input
+          return redirect303(
+            body._referrer ?? formatRoute(PagesStudent.index, {}),
+            makeToastHeaders("❌ Changes detected. Please try again."),
+          );
+        case "ok":
+          return redirect303(
+            body._referrer ?? formatRoute(PagesStudent.index, {}),
+            makeToastHeaders("✅ Student information updated"),
+          );
+        default:
+          throw new Error(`unexpected ${result satisfies never}`);
+      }
     },
     { user: UserExtra.required() },
   ),
