@@ -1,9 +1,11 @@
 import { redirect303 } from "@/lib/web/respond.ts";
+import { formatRoute } from "@/lib/web/route.ts";
 import { ExtraParser } from "@/lib/web/types.ts";
 
 import { AuthSession, AuthSessionData } from "@/app/session.ts";
 import { User } from "@/app/data/user.ts";
 import { UserSession } from "@/app/pages/_types.ts";
+import { PagesHome } from "@/app/pages/home.tsx";
 
 export class UserExtra {
   static optional(): ExtraParser<UserSession | null> {
@@ -33,7 +35,10 @@ export class UserExtra {
 
     switch (result.type) {
       case "NOT_FOUND":
-        throw redirect303("/", AuthSession.dropCookie());
+        throw redirect303(
+          formatRoute(PagesHome.index, {}),
+          AuthSession.dropCookie(),
+        );
       case "OK":
         return {
           id: result.record.id,

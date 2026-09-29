@@ -2,14 +2,15 @@ import z from "zod";
 import { OAuth2Client } from "google-auth-library";
 
 import { Body } from "@/lib/web/body.ts";
+import { Form } from "@/lib/web/link.tsx";
 import { Responses } from "@/lib/web/respond.ts";
 import { descriptor, formatRoute, route } from "@/lib/web/route.ts";
 import { SessionItem } from "@/lib/web/session.ts";
 
 import { User } from "@/app/data/user.ts";
-import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { AuthSession } from "@/app/session.ts";
-import { Form } from "@/lib/web/link.tsx";
+import { PageLayout } from "@/app/pages/_layouts/page.tsx";
+import { PagesHome } from "@/app/pages/home.tsx";
 
 const GoogleAuthClient = new OAuth2Client({
   clientId: Deno.env.get("GOOGLE_CLIENT_ID"),
@@ -63,7 +64,7 @@ export const routes = [
         status: 303,
         headers: AuthSession.dropCookie(
           new Headers({
-            "location": "/",
+            "location": formatRoute(PagesHome.index, {}),
           }),
         ),
       })
@@ -134,7 +135,7 @@ export const routes = [
         headers: await AuthSession.setCookie(
           { userId: user.id },
           GoogleAuthInitSessionItem.dropCookie({
-            "location": "/",
+            "location": formatRoute(PagesHome.index, {}),
           }),
         ),
       });

@@ -1,12 +1,19 @@
+import { formatRoute } from "@/lib/web/route.ts";
+
 import { BaseLayout, BaseLayoutProps } from "@/app/pages/_layouts/base.tsx";
 import { UserSession } from "@/app/pages/_types.ts";
+import { PagesHome } from "@/app/pages/home.tsx";
 
 export type PageLayoutProps = BaseLayoutProps & {
   user?: UserSession;
 };
 
 const nav = [
-  { label: "Home", href: "/", kind: "user" as const },
+  {
+    label: "Home",
+    href: formatRoute(PagesHome.index, {}),
+    kind: "user" as const,
+  },
   { label: "Business", href: "/business/", kind: "user" as const },
   { label: "Students", href: "/students/", kind: "user" as const },
   { label: "Invoices", href: "/invoices/", kind: "user" as const },
