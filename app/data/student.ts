@@ -4,25 +4,27 @@ import { kv } from "@/app/data/_core.ts";
 import { traced } from "@/app/trace.ts";
 import { parseEntry, Version } from "@/app/data/_types.ts";
 
+export const AGE_CATEGORIES = ["adult", "child"] as const;
+
 const StudentRecordSchema = z.object({
   id: z.uuid(),
   status: z.literal(["active", "inactive"]),
   name: z.string().nonempty(),
-  ageCategory: z.enum(["adult", "child"]).default("adult"),
+  ageCategory: z.enum(AGE_CATEGORIES).default("adult"),
   billing: z.object({
     name: z.string().nonempty(),
     address: z.string().nonempty(),
     location: z.string().nonempty(),
   }),
-  contact: z.optional(z.object({
-    email: z.email(),
-    whatsapp: z.string(),
-  })),
+  contact: z.object({
+    email: z.optional(z.email()),
+    whatsapp: z.optional(z.string()),
+  }),
 });
 
 export type StudentRecord = z.output<typeof StudentRecordSchema>;
 
-export type AgeCategory = StudentRecord["ageCategory"];
+export type AgeCategory = typeof AGE_CATEGORIES[number];
 
 export type CreateRequest = {
   name: string;
@@ -33,8 +35,8 @@ export type CreateRequest = {
     location: string;
   };
   contact: {
-    email: string;
-    whatsapp: string;
+    email?: string;
+    whatsapp?: string;
   };
 };
 
@@ -48,8 +50,8 @@ export type UpdateRequest = {
     location: string;
   };
   contact: {
-    email: string;
-    whatsapp: string;
+    email?: string;
+    whatsapp?: string;
   };
 };
 
@@ -58,9 +60,7 @@ export class Student {
     owner: string,
     options?: { includeInactive: boolean },
   ): AsyncGenerator<StudentRecord> {
-    for await (
-      const entry of await kv.list({ prefix: studentKeyAll(owner) })
-    ) {
+    for await (const entry of kv.list({ prefix: studentKeyAll(owner) })) {
       const record = StudentRecordSchema.parse(entry.value);
 
       if (record.status === "inactive" && !options?.includeInactive) {
@@ -155,20 +155,33 @@ export class Student {
     return { type: "ok" } as const;
   }
 
-  // TODO expected version
   @traced("data")
   static async remove(
     owner: string,
     id: string,
+    version: Version,
   ) {
-    const record = await this.get(owner, id);
+    const { record, version: readVersion } = await this._get(owner, id);
+
+    if (version !== readVersion) {
+      return { type: "bad_version" } as const;
+    }
 
     const updated = { ...record, status: "inactive" } satisfies StudentRecord;
+    const storable = StudentRecordSchema.encode(updated);
 
-    await kv.set(
-      studentKeyOne(owner, id),
-      StudentRecordSchema.encode(updated),
-    );
+    const key = studentKeyOne(owner, id);
+
+    const result = await kv.atomic()
+      .check({ key, versionstamp: version })
+      .set(key, storable)
+      .commit();
+
+    if (!result.ok) {
+      return { type: "bad_version" } as const;
+    }
+
+    return { type: "ok" } as const;
   }
 }
 

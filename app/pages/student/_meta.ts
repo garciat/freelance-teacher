@@ -7,16 +7,17 @@ import { descriptor } from "@/lib/web/route.ts";
 
 import { NonEmptyString } from "@/app/pages/_types.ts";
 import { VersionSchema } from "@/app/data/_types.ts";
+import { AGE_CATEGORIES } from "@/app/data/student.ts";
 
 export const RegisterFormSchema = z.object({
   _version: VersionSchema,
   name: NonEmptyString,
-  age_category: z.enum(["adult", "child"]),
+  age_category: z.enum(AGE_CATEGORIES),
   billing_name: NonEmptyString,
   billing_address: NonEmptyString,
   billing_location: NonEmptyString,
-  contact_email: z.email(),
-  contact_whatsapp: z.string().trim(),
+  contact_email: z.optional(z.email()),
+  contact_whatsapp: z.optional(NonEmptyString),
 });
 
 export const PagesStudent = {
@@ -43,7 +44,7 @@ export const PagesStudent = {
   delete: {
     post: descriptor("POST", "/students/delete/:id", {
       path: z.object({ id: z.uuid() }),
-      body: Body.formData(z.object({})),
+      body: Body.formData(z.object({ _version: VersionSchema })),
     }),
   },
 };

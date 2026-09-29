@@ -118,7 +118,7 @@ export const routes = [
         },
         contact: {
           email: body.contact_email,
-          whatsapp: body.contact_whatsapp ?? "",
+          whatsapp: body.contact_whatsapp,
         },
       });
 
@@ -171,7 +171,7 @@ export const routes = [
           },
           contact: {
             email: body.contact_email,
-            whatsapp: body.contact_whatsapp ?? "",
+            whatsapp: body.contact_whatsapp,
           },
         },
       );
@@ -196,10 +196,23 @@ export const routes = [
   ),
   route(
     PagesStudent.delete.post,
-    async ({ path, user }) => {
-      await Student.remove(user.id, path.id);
+    async ({ path, body, user }) => {
+      const result = await Student.remove(user.id, path.id, body._version);
 
-      return redirect303(formatRoute(PagesStudent.index, {}));
+      switch (result.type) {
+        case "bad_version":
+          return redirect303(
+            formatRoute(PagesStudent.index, {}),
+            makeToastHeaders("❌ Changes detected. Please try again."),
+          );
+        case "ok":
+          return redirect303(
+            formatRoute(PagesStudent.index, {}),
+            makeToastHeaders("✅ Student removed"),
+          );
+        default:
+          throw new Error(`unexpected ${result satisfies never}`);
+      }
     },
     { user: UserExtra.required() },
   ),
