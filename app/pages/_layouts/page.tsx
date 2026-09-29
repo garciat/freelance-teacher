@@ -1,7 +1,9 @@
 import { BaseLayout, BaseLayoutProps } from "@/app/pages/_layouts/base.tsx";
 import { UserSession } from "@/app/pages/_types.ts";
 
-export type PageLayoutProps = BaseLayoutProps;
+export type PageLayoutProps = BaseLayoutProps & {
+  user?: UserSession;
+};
 
 const nav = [
   { label: "Home", href: "/", kind: "user" as const },
@@ -13,7 +15,7 @@ const nav = [
 ];
 
 function isVisible(
-  user: UserSession | undefined | null,
+  user: UserSession | undefined,
   kind: "all" | "user" | "anon",
 ): boolean {
   switch (kind) {

@@ -1,8 +1,5 @@
-import { UserSession } from "@/app/pages/_types.ts";
-
 export type BaseLayoutProps = {
   title: string;
-  user?: UserSession | null;
   children: React.ReactNode;
 };
 
