@@ -45,6 +45,13 @@ export interface InvoiceItem {
   price: number;
   /** VAT % for this item type */
   vatPct: number;
+  total: number;
+}
+
+export interface InvoiceTotal {
+  beforeTax: number;
+  taxAmount: number;
+  total: number;
 }
 
 /**
@@ -57,6 +64,7 @@ export interface DutchInvoiceData {
   client: InvoiceClient;
   invoiceMeta: InvoiceMeta;
   items: InvoiceItem[];
+  total: InvoiceTotal;
 }
 
 // Define clean, compliant styling using Flexbox
@@ -188,21 +196,6 @@ export async function renderInvoiceToBlob(
 export const DutchInvoice: React.FC<DutchInvoiceProps> = ({ data }) => {
   const { title, sender, client, invoiceMeta, items } = data;
 
-  // Calculations
-  const itemDerivedValues = items.map((item) => ({
-    value: item.qty * item.price,
-    get vat() {
-      return this.value * (item.vatPct / 100);
-    },
-    get total() {
-      return this.value + this.vat;
-    },
-  }));
-
-  const subtotal = sum(itemDerivedValues.map((v) => v.value));
-  const vatAmount = sum(itemDerivedValues.map((v) => v.vat));
-  const total = subtotal + vatAmount;
-
   return (
     <Document title={title}>
       <Page size="A4" style={styles.page}>
@@ -265,9 +258,7 @@ export const DutchInvoice: React.FC<DutchInvoiceProps> = ({ data }) => {
               <Text style={styles.colQty}>{item.qty}</Text>
               <Text style={styles.colPrice}>€ {item.price.toFixed(2)}</Text>
               <Text style={styles.colPrice}>{item.vatPct} %</Text>
-              <Text style={styles.colTotal}>
-                € {itemDerivedValues[index].total.toFixed(2)}
-              </Text>
+              <Text style={styles.colTotal}>€ {item.total.toFixed(2)}</Text>
             </View>
           ))}
         </View>
@@ -277,15 +268,17 @@ export const DutchInvoice: React.FC<DutchInvoiceProps> = ({ data }) => {
           <View style={styles.totalsTable}>
             <View style={styles.totalsRow}>
               <Text>Subtotaal (Excl. BTW):</Text>
-              <Text>€ {subtotal.toFixed(2)}</Text>
+              <Text>€ {data.total.beforeTax.toFixed(2)}</Text>
             </View>
             <View style={styles.totalsRow}>
               <Text>BTW:</Text>
-              <Text>€ {vatAmount.toFixed(2)}</Text>
+              <Text>€ {data.total.taxAmount.toFixed(2)}</Text>
             </View>
             <View style={[styles.totalsRow, styles.grandTotalRow]}>
               <Text style={styles.grandTotalText}>Totaal (Incl. BTW):</Text>
-              <Text style={styles.grandTotalText}>€ {total.toFixed(2)}</Text>
+              <Text style={styles.grandTotalText}>
+                € {data.total.total.toFixed(2)}
+              </Text>
             </View>
           </View>
         </View>
@@ -306,11 +299,3 @@ export const DutchInvoice: React.FC<DutchInvoiceProps> = ({ data }) => {
     </Document>
   );
 };
-
-function sum(values: Iterable<number>): number {
-  let x = 0;
-  for (const value of values) {
-    x += value;
-  }
-  return x;
-}

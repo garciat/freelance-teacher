@@ -7,12 +7,16 @@ import { formatRoute, route } from "@/lib/web/route.ts";
 import { Business } from "@/app/data/business.ts";
 import { Invoice } from "@/app/data/invoice.ts";
 import { Student } from "@/app/data/student.ts";
-import { renderInvoiceToBuffer } from "@/app/shared/invoice.tsx";
+import {
+  DutchInvoiceData,
+  renderInvoiceToBuffer,
+} from "@/app/shared/invoice.tsx";
 
 import { UserExtra } from "@/app/pages/_extra.ts";
 import { PageLayout } from "@/app/pages/_layouts/page.tsx";
 import { PagesInvoice } from "@/app/pages/invoice/_meta.ts";
 import { makeToastHeaders } from "@/lib/web/toast/backend.ts";
+import BigDecimal from "bigdecimal";
 
 export const RouteInvoiceCreate = {
   get: route(
@@ -141,7 +145,14 @@ export const RouteInvoiceCreate = {
 
       const deadline = created.add({ days: body.deadline_days });
 
-      const invoice = await renderInvoiceToBuffer({
+      const vatPct = Number.parseInt(body.vat_rate);
+      const vatRate = new BigDecimal(vatPct).div(100);
+
+      const costBeforeTax = body.hourly_rate.times(body.lesson_count);
+      const taxAmount = costBeforeTax.times(vatRate);
+      const total = costBeforeTax.plus(taxAmount);
+
+      const invoiceData = {
         title: `Invoice ${body.sequence_no}`,
         sender: business,
         client: {
@@ -152,9 +163,7 @@ export const RouteInvoiceCreate = {
         invoiceMeta: {
           number: body.sequence_no.toString(),
           date: created.toPlainDate(),
-          dueDate: created
-            .add({ days: body.deadline_days })
-            .toPlainDate(),
+          dueDate: deadline.toPlainDate(),
           paymentTerms: body.deadline_days,
         },
         items: [
@@ -162,10 +171,18 @@ export const RouteInvoiceCreate = {
             description: `Lessen voor ${student.name}`,
             qty: body.lesson_count,
             price: body.hourly_rate.toNumber(),
-            vatPct: Number.parseInt(body.vat_rate),
+            vatPct: vatPct,
+            total: total.toNumber(),
           },
         ],
-      });
+        total: {
+          beforeTax: costBeforeTax.toNumber(),
+          taxAmount: taxAmount.toNumber(),
+          total: total.toNumber(),
+        },
+      } satisfies DutchInvoiceData;
+
+      const invoice = await renderInvoiceToBuffer(invoiceData);
 
       await Invoice.create(user.id, {
         sequenceNumber: BigInt(body.sequence_no),
