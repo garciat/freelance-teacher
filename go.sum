@@ -1,4 +1,6 @@
 github.com/gomarkdown/markdown v0.0.0-20261011113952-f83953680332 h1:2bMNZuwlvpxcS7wBR2/UdIkIYq6Hkez5cIYMVK/FwPg=
 github.com/gomarkdown/markdown v0.0.0-20261011113952-f83953680332/go.mod h1:zLCvXLlUnS5tvOi4hpJgzzpJsq0+dliwn85VbPh1JbQ=
+github.com/gorilla/schema v1.4.1 h1:jUg5hUjCSDZpNGLuXQOgIWGdlgrIdYvgQ0wZtdK1M3E=
+github.com/gorilla/schema v1.4.1/go.mod h1:Dg5SSm5PV60mhF2NFaTV1xuYYj8tV8NOPRo4FggUMnM=
 maragu.dev/gomponents v1.4.0 h1:Z8H37xDr+ZYv0GiBsrOFdHYjoTGsospoIG+QLOGazwI=
 maragu.dev/gomponents v1.4.0/go.mod h1:oEDahza2gZoXDoDHhw8jBNgH+3UR5ni7Ur648HORydM=
